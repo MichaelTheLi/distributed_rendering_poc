@@ -9,7 +9,8 @@
   ],
   "require": {
     "cboden/ratchet": "^0.4.1",
-    "monolog/monolog": "^1.24"
+    "monolog/monolog": "^1.24",
+    "ext-json": "*"
   },
   "config": {
     "platform": {

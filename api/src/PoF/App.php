@@ -21,7 +21,7 @@ class App
         $maxFiles = 10;
 
         $logger->pushHandler(
-            new \Monolog\Handler\RotatingFileHandler(ROOT_DIR . '/../logs/app.log', $maxFiles)
+            new \Monolog\Handler\RotatingFileHandler(ROOT_DIR . '/logs/app.log', $maxFiles)
         );
 
         \Monolog\ErrorHandler::register($logger);
@@ -37,7 +37,7 @@ class App
                     new DistributedSomething($logger)
                 )
             ),
-            8085
+            8080
         );
 
         $server->run();

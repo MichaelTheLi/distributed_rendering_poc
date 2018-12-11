@@ -41,9 +41,66 @@ class DistributedSomething implements MessageComponentInterface {
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
-        $this->client->send('test');
+//        $this->logger->debug('onMessage');
 
-        $this->logger->debug('onMessage');
+        $messageData = json_decode($msg, true);
+        if  ($messageData['message'] === 'render_image') {
+            $this->client->send(json_encode([
+                'message' => 'started'
+            ]));
+
+            $width = 100;
+            $height = 100;
+            for ($i = 0; $i < $width; $i++) {
+                for ($j = 0; $j < $height; $j++) {
+                    $data = [
+                        'message' => 'pixel',
+                        'index'   => $i * $width + $j,
+                        'R'       => rand(0, 255),
+                        'G'       => rand(0, 255),
+                        'B'       => rand(0, 255),
+                        'A'       => rand(0, 255),
+                    ];
+                    $this->client->send(json_encode($data));
+                }
+            }
+
+            $this->client->send(json_encode([
+                'message' => 'done'
+            ]));
+        } elseif ($messageData['message'] === 'render_full_image') {
+            $this->client->send(json_encode([
+                'message' => 'started'
+            ]));
+
+            $width = 200;
+            $height = 100;
+
+            $started = microtime(true);
+//            $this->logger->debug('Started: '. $started);
+            $data = [];
+            $index = 0;
+            $color = mt_rand(0, 255);
+            for ($i = 0; $i < $width; $i++) {
+                for ($j = 0; $j < $height; $j++) {
+                    if (mt_rand(0, 255) % 15 === 0) {
+                        $color = mt_rand(0, 255);
+                    }
+                    $data[$index + 0] = $color;
+                    $data[$index + 1] = $color;
+                    $data[$index + 2] = $color;
+                    $data[$index + 3] = 255;
+                    $index += 4;
+                }
+            }
+//            $this->logger->debug('Done in '. (microtime(true) - $started) . 's');
+
+            $this->client->send(json_encode([
+                'message'   => 'done_full',
+                'imageData' => $data,
+                'startTime' => $messageData['startTime']
+            ]));
+        }
     }
 
     public function onClose(ConnectionInterface $conn) {

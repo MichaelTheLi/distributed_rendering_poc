@@ -1,8 +1,8 @@
 <?php
 
-define('ROOT_DIR', __DIR__);
+define('API_ROOT_DIR', __DIR__);
 
-require_once ROOT_DIR . '/vendor/autoload.php';
+require_once API_ROOT_DIR . '/vendor/autoload.php';
 
 $app = new \PoF\App();
 $app->run();
