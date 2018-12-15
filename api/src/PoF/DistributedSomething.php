@@ -10,9 +10,14 @@ namespace PoF;
 
 use Monolog\Logger;
 use Ratchet\ConnectionInterface;
-use Ratchet\MessageComponentInterface;
+use Ratchet\RFC6455\Messaging\Frame;
+use Ratchet\WebSocket\MessageComponentInterface;
+use Ratchet\RFC6455\Messaging\MessageInterface;
 
 class DistributedSomething implements MessageComponentInterface {
+    const START_FULL_RENDER_MSG_CODE = 1;
+    const FULL_RENDER_STARTED_MSG_CODE = 2;
+    const FULL_RENDER_DONE_MSG_CODE = 3;
     /**
      * @var ConnectionInterface
      */
@@ -40,41 +45,22 @@ class DistributedSomething implements MessageComponentInterface {
         $this->logger->debug("New connection! ({$conn->resourceId})");
     }
 
-    public function onMessage(ConnectionInterface $from, $msg) {
-//        $this->logger->debug('onMessage');
+    public function onMessage(ConnectionInterface $from, MessageInterface $msg) {
+        $messageData = unpack('C*', $msg);
 
-        $messageData = json_decode($msg, true);
-        if  ($messageData['message'] === 'render_image') {
-            $this->client->send(json_encode([
-                'message' => 'started'
-            ]));
+        $messageData = array_values($messageData);
 
-            $width = 100;
-            $height = 100;
-            for ($i = 0; $i < $width; $i++) {
-                for ($j = 0; $j < $height; $j++) {
-                    $data = [
-                        'message' => 'pixel',
-                        'index'   => $i * $width + $j,
-                        'R'       => rand(0, 255),
-                        'G'       => rand(0, 255),
-                        'B'       => rand(0, 255),
-                        'A'       => rand(0, 255),
-                    ];
-                    $this->client->send(json_encode($data));
-                }
-            }
+        if ($messageData[0] === static::START_FULL_RENDER_MSG_CODE) {
+            $startedData = [
+                self::FULL_RENDER_STARTED_MSG_CODE
+            ];
+            $this->client->send(new Frame(pack('C*', ...$startedData), true, Frame::OP_BINARY));
+//            $this->client->send(json_encode([
+//                'message' => 'started'
+//            ]));
 
-            $this->client->send(json_encode([
-                'message' => 'done'
-            ]));
-        } elseif ($messageData['message'] === 'render_full_image') {
-            $this->client->send(json_encode([
-                'message' => 'started'
-            ]));
-
-            $width = 200;
-            $height = 100;
+            $width = 120;
+            $height = 80;
 
             $started = microtime(true);
 //            $this->logger->debug('Started: '. $started);
@@ -83,9 +69,9 @@ class DistributedSomething implements MessageComponentInterface {
             $color = mt_rand(0, 255);
             for ($i = 0; $i < $width; $i++) {
                 for ($j = 0; $j < $height; $j++) {
-                    if (mt_rand(0, 255) % 15 === 0) {
-                        $color = mt_rand(0, 255);
-                    }
+//                    if (mt_rand(0, 255) % 15 === 0) {
+//                        $color = mt_rand(0, 255);
+//                    }
                     $data[$index + 0] = $color;
                     $data[$index + 1] = $color;
                     $data[$index + 2] = $color;
@@ -94,12 +80,17 @@ class DistributedSomething implements MessageComponentInterface {
                 }
             }
 //            $this->logger->debug('Done in '. (microtime(true) - $started) . 's');
-
-            $this->client->send(json_encode([
-                'message'   => 'done_full',
-                'imageData' => $data,
-                'startTime' => $messageData['startTime']
-            ]));
+            $doneData = array_merge(
+                [
+                    self::FULL_RENDER_DONE_MSG_CODE,
+                ],
+                $data
+            );
+            $this->client->send(new Frame(pack('C*', ...$doneData), true, Frame::OP_BINARY));
+//            $this->client->send(json_encode([
+//                'message'   => 'done_full',
+//                'imageData' => $data
+//            ]));
         }
     }
 

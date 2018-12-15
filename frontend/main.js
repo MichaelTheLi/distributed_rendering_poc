@@ -1,66 +1,67 @@
 // Создает WebSocket - подключение.
 const socket = new WebSocket('ws://pof.test:8080/index.php');
-// const socket = new WebSocket('ws://localhost:8085');
+socket.binaryType = 'arraybuffer';
 
-const ctx = document.getElementById('canvas').getContext('2d');
+const width = 120;
+const height = 80;
 
-const createImageData = function () {
-  return ctx.createImageData(100, 100);
-};
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.setAttribute('width', width);
+canvas.setAttribute('height', height);
+
+const START_FULL_RENDER_MESSAGE = 1;
+const FULL_RENDER_STARTED_MESSAGE = 2;
+const FULL_RENDER_DONE_MESSAGE = 3;
 
 const createFullImageData = function () {
-  return ctx.createImageData(200, 100);
+  return ctx.createImageData(width, height);
 };
-
-// let imageData = createImageData();
 
 let loading = false;
 
+const getStartMessage = function () {
+  const byteArray = new Uint8Array(1);
+  byteArray[0] = START_FULL_RENDER_MESSAGE;
+
+  return byteArray.buffer;
+};
+
+let count = 0;
+
 const initializeApp = function () {
   socket.addEventListener('message', function (event) {
-    const fpsEl = document.getElementById('fps');
-    const data = JSON.parse(event.data);
+    let data = event.data;
 
-    if (data.message === 'done_full') {
+    if (data instanceof ArrayBuffer) {
+      data = new Uint8Array(data);
+    }
+
+    if (data[0] === FULL_RENDER_DONE_MESSAGE) {
+      const imageData = data.slice(1);
       const imageDataFull = createFullImageData();
-      imageDataFull.data.set(data.imageData);
+      imageDataFull.data.set(imageData);
       ctx.putImageData(imageDataFull, 0, 0);
-      let time = Date.now() - data.startTime;
-      setTimeout(function () {
-        fpsEl.innerText = (1000 / time).toFixed(1);
-      }, 0);
-      // console.log((Date.now() - data.startTime) + 'ms');
       loading = false;
-    } else if (data.message === 'done') {
-      ctx.putImageData(imageData, 0, 0);
-      console.log((Date.now() - data.startTime) + 'ms');
-    } else if (data.message === 'pixel') {
-      imageData.data[data.index + 0] = data.R;  // R value
-      imageData.data[data.index + 1] = data.G;  // G value
-      imageData.data[data.index + 2] = data.B;  // B value
-      imageData.data[data.index + 3] = data.A;  // A value
+      count++;
     }
   });
-
-  // imageData = createImageData();
-  // socket.send('render_full_image');
 
   setInterval(function () {
     if (loading === false) {
       loading = true;
-      // imageData = ctx.createImageData(100, 100);
-      socket.send(JSON.stringify({
-        message: 'render_full_image',
-        startTime: Date.now()
-      }));
+      socket.send(getStartMessage());
     }
-  }, 50);
-  // setInterval(function () {
-  //   imageData = ctx.createImageData(100, 100);
-  //   socket.send('render_image');
-  //   startTime = Date.now();
-  // }, 2000);
+  },0);
 };
+
+
+setInterval(function () {
+  const fpsValue = count;
+  count = 0;
+  const fpsEl = document.getElementById('fps');
+  fpsEl.innerText = fpsValue.toFixed(1);
+}, 1000);
 
 // Соединение открыто
 socket.addEventListener('open', function (event) {
