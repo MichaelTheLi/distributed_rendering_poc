@@ -26,18 +26,13 @@ class App
 
         \Monolog\ErrorHandler::register($logger);
 
-//        $server = IoServer::factory(
-//            new DistributedSomething(),
-//            8085
-//        );
-
         $server = IoServer::factory(
             new HttpServer(
                 new WsServer(
                     new DistributedSomething($logger)
                 )
             ),
-            8080
+            8086
         );
 
         $server->run();
