@@ -29,15 +29,9 @@ class DistributedSomething implements MessageComponentInterface {
     protected $logger;
 
     /**
-     * @var integer
+     * @var ImageDataProvider
      */
-    protected $colorIndex;
-
-    /**
-     * @var integer
-     */
-    protected $colorInc;
-
+    protected $imageDataProvider;
     /**
      * DistributedSomething constructor.
      *
@@ -46,14 +40,15 @@ class DistributedSomething implements MessageComponentInterface {
     public function __construct(Logger $logger)
     {
         $this->logger = $logger;
+
+        $this->imageDataProvider = new ImageDataProvider();
     }
 
 
     public function onOpen(ConnectionInterface $conn) {
         $this->client = $conn;
 
-        $this->colorIndex = 0;
-        $this->colorInc = 1;
+        $this->imageDataProvider->init();
         $this->logger->debug("New connection! ({$conn->resourceId})");
     }
 
@@ -67,33 +62,13 @@ class DistributedSomething implements MessageComponentInterface {
                 self::FULL_RENDER_STARTED_MSG_CODE
             ];
             $this->client->send(new Frame(pack('C*', ...$startedData), true, Frame::OP_BINARY));
-//            $this->client->send(json_encode([
-//                'message' => 'started'
-//            ]));
 
             $width = $messageData[1];
             $height = $messageData[2];
 
-            $started = microtime(true);
-//            $this->logger->debug('Started: '. $started);
-            $data = [];
-            $index = 0;
-            $color = mt_rand(0, 255);
-            for ($i = 0; $i < $width; $i++) {
-                for ($j = 0; $j < $height; $j++) {
-                    if (mt_rand(0, 255) % 15 === 0) {
-                        $color = mt_rand(0, 255);
-                    }
-                    $data[$index + 0] = $color;
-                    $data[$index + 1] = $color;
-                    $data[$index + 2] = $color;
-                    $data[$index + 3] = 255;
-                    $index += 4;
-                }
-            }
 
-            $this->colorIndex += $this->colorInc * 10;
-//            $this->logger->debug('Done in '. (microtime(true) - $started) . 's');
+            $data = $this->imageDataProvider->data($width, $height);
+
             $doneData = array_merge(
                 [
                     self::FULL_RENDER_DONE_MSG_CODE,
@@ -101,10 +76,6 @@ class DistributedSomething implements MessageComponentInterface {
                 $data
             );
             $this->client->send(new Frame(pack('C*', ...$doneData), true, Frame::OP_BINARY));
-//            $this->client->send(json_encode([
-//                'message'   => 'done_full',
-//                'imageData' => $data
-//            ]));
         }
     }
 

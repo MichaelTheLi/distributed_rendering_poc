@@ -1,10 +1,10 @@
 class FPS {
   el;
   framesCount = 0;
-  constructor(el, updateRate) {
+  constructor(el) {
     this.el = el;
 
-    setInterval(this.render.bind(this), updateRate * 1000)
+    setInterval(this.render.bind(this), 1000)
   }
 
   bump() {

@@ -15,11 +15,20 @@ class App {
       event: 'open',
       onEvent: this.initRendering.bind(this)
     })
+
+    document.getElementById('width').addEventListener('change', function () {
+      this.width = event.target.value
+      this.initRendering();
+    }.bind(this))
+    document.getElementById('height').addEventListener('change', function () {
+      this.height = event.target.value
+      this.initRendering();
+    }.bind(this))
   }
 
   initRendering() {
     this.image = new ImageHandler(this.width, this.height, document.getElementById('canvas'));
-    this.fps = new FPS(document.getElementById('fps'), 1);
+    this.fps = new FPS(document.getElementById('fps'));
 
     this.startLoop()
     this.transport.addListener(this.messageListener())
