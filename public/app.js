@@ -4,8 +4,8 @@ class App {
   FULL_RENDER_DONE_MESSAGE = 3;
 
   _loading = false;
-  width = 120;
-  height = 80;
+  width = 240;
+  height = 240;
   desiredFps = 24;
 
   init() {
@@ -16,6 +16,8 @@ class App {
       onEvent: this.initRendering.bind(this)
     })
 
+    document.getElementById('width').value = this.width
+    document.getElementById('height').value = this.height
     document.getElementById('width').addEventListener('change', function () {
       this.width = event.target.value
       this.initRendering();
